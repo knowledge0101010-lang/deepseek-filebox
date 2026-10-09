@@ -59,6 +59,52 @@ VK.update({"-": 0xBD, "=": 0xBB, "[": 0xDB, "]": 0xDD, "\\": 0xDC,
            ";": 0xBA, "'": 0xDE, ",": 0xBC, ".": 0xBE, "/": 0xBF, "`": 0xC0})
 
 
+# --- SendInput (required for Chromium/Electron targets) ----------------------
+# `keybd_event` is a legacy path that Chromium-based apps (Edge, Electron) ignore for
+# unicode text. SendInput delivers the same events through the modern input stack.
+ULONG_PTR = ctypes.c_ulonglong if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c_ulong
+
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_long), ("dy", ctypes.c_long), ("mouseData", ctypes.c_uint),
+                ("dwFlags", ctypes.c_uint), ("time", ctypes.c_uint),
+                ("dwExtraInfo", ULONG_PTR)]
+
+
+class KEYBDINPUT(ctypes.Structure):
+    _fields_ = [("wVk", ctypes.c_ushort), ("wScan", ctypes.c_ushort),
+                ("dwFlags", ctypes.c_uint), ("time", ctypes.c_uint),
+                ("dwExtraInfo", ULONG_PTR)]
+
+
+class HARDWAREINPUT(ctypes.Structure):
+    _fields_ = [("uMsg", ctypes.c_uint), ("wParamL", ctypes.c_ushort),
+                ("wParamH", ctypes.c_ushort)]
+
+
+class _INPUTUNION(ctypes.Union):
+    _fields_ = [("mi", MOUSEINPUT), ("ki", KEYBDINPUT), ("hi", HARDWAREINPUT)]
+
+
+class INPUT(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_uint), ("u", _INPUTUNION)]
+
+
+def send_input_key(vk: int = 0, scan: int = 0, flags: int = 0) -> int:
+    inp = INPUT(type=INPUT_KEYBOARD,
+                u=_INPUTUNION(ki=KEYBDINPUT(vk, scan, flags, 0, 0)))
+    return int(_user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT)))
+
+
+def send_unicode(ch: str) -> None:
+    send_input_key(0, ord(ch), KEYEVENTF_UNICODE)
+    send_input_key(0, ord(ch), KEYEVENTF_UNICODE | KEYEVENTF_KEYUP)
+
+
+def send_vk(vk: int, up: bool = False) -> None:
+    send_input_key(vk, 0, KEYEVENTF_KEYUP if up else 0)
+
+
 # --- minimal PNG encoder (stdlib only) ---------------------------------------
 def encode_png(width: int, height: int, rows_rgb: list[bytes]) -> bytes:
     raw = b"".join(b"\x00" + r for r in rows_rgb)
@@ -118,7 +164,8 @@ class Operator:
         """Returns an error dict if the action must not run, else None."""
         if self._panic:
             return {"ok": False, "error": "panic engaged; input disabled for this session"}
-        if not self.enable_input:
+        # dry-run may always PLAN, even when input is not armed: nothing is applied.
+        if not self.dry_run and not self.enable_input:
             return {"ok": False, "error": "input disabled: start the server with --enable-input"}
         now = time.time()
         if self.min_interval and (now - self._last) < self.min_interval:
@@ -244,9 +291,7 @@ class Operator:
                                 {"ok": True, "applied": False,
                                  "plan": {"text_preview": text[:40]}})
         for ch in text:
-            code = ord(ch)
-            _user32.keybd_event(0, code, KEYEVENTF_UNICODE, 0)
-            _user32.keybd_event(0, code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP, 0)
+            send_unicode(ch)          # SendInput path: works in Chromium/Electron
         return self._finish("key_type", {"chars": len(text)}, {"ok": True, "applied": True})
 
     def key_press(self, keys: list[str]) -> dict:
@@ -264,9 +309,9 @@ class Operator:
             return self._finish("key_press", {"keys": upper},
                                 {"ok": True, "applied": False, "plan": {"keys": upper}})
         for k in upper:
-            _user32.keybd_event(VK[k], 0, 0, 0)
+            send_vk(VK[k])
         for k in reversed(upper):
-            _user32.keybd_event(VK[k], 0, KEYEVENTF_KEYUP, 0)
+            send_vk(VK[k], up=True)
         return self._finish("key_press", {"keys": upper}, {"ok": True, "applied": True})
 
     def panic(self) -> dict:

@@ -109,6 +109,24 @@ Why the original count dropped: the index was built against paths under `Downloa
 machine. **The stored content survived** — that is precisely why the box keeps content rather
 than only a path list. Neither check ever produced a hash mismatch.
 
+## Local operator (mouse / keyboard / screen)
+
+`tools/operator_mcp.py` gives an agent eyes and hands on this machine — screen capture plus
+mouse and keyboard injection — exposed over MCP so a TARS/UI-TARS agent can drive it
+(see [docs/OPERATOR.md](docs/OPERATOR.md) and [docs/INTEGRATION-UI-TARS.md](docs/INTEGRATION-UI-TARS.md)).
+
+Safety is the default: **input is disabled unless `--enable-input` is passed**, dry-run reports
+plans without acting, coordinates are bounds-checked, actions are rate-limited, attempts are
+written to a JSONL audit log, and `operator_panic` locks input for the rest of the session.
+
+```powershell
+python tools/operator_mcp.py                  # safe: disabled + dry-run
+python tools/operator_mcp.py --enable-input --audit .\operator-audit.jsonl
+```
+
+The tests never move the real cursor: they verify the refusal path, the dry-run path, bounds
+checks, the panic lock, and the audit log.
+
 ## Results
 
 See [`docs/RESULTS.md`](docs/RESULTS.md) for the raw numbers, and

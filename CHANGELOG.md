@@ -11,6 +11,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · SemVer.
 - `filebox_mcp.py` — MCP (stdio JSON-RPC) server exposing the read-only filebox tools, so a
   ByteDance **Agent TARS / UI-TARS Desktop** agent can mount it (its kernel is MCP-based).
   See `docs/INTEGRATION-UI-TARS.md`.
+- `operator_mcp.py` — local operator over MCP: desktop `screen_capture` (stdlib PNG encoder),
+  `mouse_move` / `mouse_click`, `key_type` / `key_press`, and an `operator_panic` kill switch.
+  Input is **disabled by default** (`--enable-input` to arm), dry-run reports plans without
+  acting, coordinates are bounds-checked, actions are rate-limited, and every attempt is
+  appended to a JSONL audit log. See `docs/OPERATOR.md`.
 - `box_selfcheck.py` — re-hashes stored objects against their hash keys (box internal
   integrity), for the case where originals are gone.
 - `filebox_ops.py` — `stats`, `dedupe`, `verify` (end-to-end SHA-256 re-read),

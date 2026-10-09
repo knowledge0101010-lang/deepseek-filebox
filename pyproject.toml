@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deepseek-filebox"
+version = "0.1.0"
+description = "One SQLite file that indexes and deduplicates an entire filesystem tree, with byte-exact verification."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "The DeepSeek Filebox Authors" }]
+keywords = ["deduplication", "sqlite", "content-addressed", "filesystem-index", "provenance"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Filesystems",
+  "Topic :: Utilities",
+]
+dependencies = []          # standard library only
+
+[project.urls]
+Homepage = "https://github.com/"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

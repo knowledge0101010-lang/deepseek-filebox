@@ -1,0 +1,18 @@
+# Generated / build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.db
+*.db-journal
+*.log
+out/
+filebox-canonical/
+DIET/
+diet-manifest.json
+e2e-clusters.json
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

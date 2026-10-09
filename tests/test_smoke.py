@@ -80,3 +80,27 @@ def test_query_lists_and_cats(tmp_path):
     obj = src / "pkg" / "app.py"
     content = run("filebox_query.py", "cat", "--db", str(db), str(obj))
     assert "print('hello')" in content
+
+
+def test_box_selfcheck_is_exact(tmp_path):
+    """Stored objects must hash back to their own keys (originals not needed)."""
+    src = make_fixture(tmp_path)
+    db = tmp_path / "box.db"
+    run("filebox_build.py", "--phase", "all", "--sources", f"{src}=test", "--db", str(db))
+
+    out = run("box_selfcheck.py", "--db", str(db))
+    assert '"mismatch": 0' in out, out
+    assert '"exact_ratio": 1.0' in out, out
+
+
+def test_verify_reports_missing_originals(tmp_path):
+    """If an original disappears, verify must count it as unreadable, not as a mismatch."""
+    src = make_fixture(tmp_path)
+    db = tmp_path / "box.db"
+    run("filebox_build.py", "--phase", "all", "--sources", f"{src}=test", "--db", str(db))
+
+    (src / "pkg" / "other.py").unlink()
+
+    out = run("filebox_ops.py", "verify", "--db", str(db))
+    assert '"mismatch": 0' in out, out
+    assert '"source_unreadable": 1' in out, out

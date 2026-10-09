@@ -31,18 +31,23 @@ The commands are given so a third party can reproduce them.
 
 ## Accuracy (the point of the exercise)
 
+Two different checks, both reported — see README §"Verification (two kinds)".
+
 ```
-python tools/filebox_ops.py verify
+python tools/filebox_ops.py verify     # re-read ORIGINALS
+python tools/box_selfcheck.py          # re-hash STORED CONTENT
 ```
 
-Re-reads each original from disk and compares its SHA-256 with the stored hash:
+| Check | Checked | Exact | Mismatch | Ratio |
+|---|---|---|---|---|
+| Source re-read (originals still present) | 23,168 | 23,168 | **0** | **1.0** |
+| Box self-consistency (stored objects) | 12,047 | 12,047 | **0** | **1.0** |
 
-| Checked | Exact | Mismatch | Ratio |
-|---|---|---|---|
-| 29,500 | 29,500 | **0** | **1.0** |
-
-Compression is only accepted because restoration is byte-exact; anything that could not be
-proven equivalent (B and C) is reported, never merged.
+**Honest caveat, measured:** of the 155,006 content-bearing entries, **131,838** no longer
+exist at their indexed paths — the trees under `Downloads` and `Antigravity` were reorganised
+after indexing. Their content is still in the box, but they cannot be verified against a
+source file. An earlier partial run reported `29,500 / 29,500 exact`; that number was true for
+the subset it covered and is superseded by the full-run figures above.
 
 ## Interesting finding
 
